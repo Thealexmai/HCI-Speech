@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <title>Automated Agent - Alex Mai</title>
+  <!-- Add dependencies -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+
+</head>
+
+<style>
+  * {
+    font-family: Verdana, Arial, sans-serif;
+  }
+  a:link {
+    color:#000;
+    text-decoration: none;
+  }
+  a:visited {
+    color:#000;
+  }
+  a:hover {
+    color:#33F;
+  }
+  .button {
+    background: -webkit-linear-gradient(top,#008dfd 0,#0370ea 100%);
+    border: 1px solid #076bd2;
+    border-radius: 3px;
+    color: #fff;
+    display: none;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.3;
+    padding: 8px 25px;
+    text-align: center;
+    text-shadow: 1px 1px 1px #076bd2;
+    letter-spacing: normal;
+  }
+  .center {
+    padding: 10px;
+    text-align: center;
+  }
+  .final {
+    color: black;
+    padding-right: 3px; 
+  }
+  .interim {
+    color: gray;
+  }
+  .info {
+    font-size: 14px;
+    text-align: center;
+    color: #777;
+    display: none;
+  }
+  .right {
+    float: right;
+  }
+  .sidebyside {
+    display: inline-block;
+    width: 45%;
+    min-height: 40px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .agent_words {
+    padding: 0px 20px;
+  }
+  #headline {
+    font-size: 40px;
+    font-weight: 300;
+  }
+  #info {
+    font-size: 20px;
+    text-align: center;
+    color: #777;
+    visibility: hidden;
+  }
+  #results {
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #ddd;
+    padding: 15px;
+    text-align: left;
+    min-height: 150px;
+  }
+  #start_button {
+    border: 0;
+    background-color:transparent;
+    padding: 0;
+  }
+  #dialog-box {
+    border:1px solid black;
+    height: 300px;
+    overflow-y: scroll;
+  }
+</style>
+
+
+<h1 class="center" id="headline">Automated Agent Demonstration</h1>
+<div class="center">
+  <div id="div_language">
+    <select id="select_language" class="custom-select" onchange="updateCountry()"></select>
+    &nbsp;&nbsp;
+    <select id="select_dialect" class="custom-select"></select>
+  </div>
+</div>
+
+<div id="info">
+  <p id="info_start">Click on the Call button to speak to a Comcast Agent.</p>
+  <p id="info_speak_now">Speak now.</p>
+  <p id="info_no_speech">No speech was detected. You may need to adjust your
+    <a href="//support.google.com/chrome/bin/answer.py?hl=en&amp;answer=1407892">
+      microphone settings</a>.</p>
+  <p id="info_no_microphone" style="display:none">
+    No microphone was found. Ensure that a microphone is installed and that
+    <a href="//support.google.com/chrome/bin/answer.py?hl=en&amp;answer=1407892">
+    microphone settings</a> are configured correctly.</p>
+  <p id="info_allow">Click the "Allow" button above to enable your microphone.</p>
+  <p id="info_denied">Permission to use microphone was denied.</p>
+  <p id="info_blocked">Permission to use microphone is blocked. To change,
+    go to chrome://settings/contentExceptions#media-stream</p>
+  <p id="info_upgrade">Web Speech API is not supported by this browser.
+     Upgrade to <a href="//www.google.com/chrome">Chrome</a>
+     version 25 or later.</p>
+</div>
+
+
+<div class="container">
+
+  <div class="row" style="margin-top: 20px">
+    <div class="col-md-2" style="text-align: center">
+      <button type="button" class="btn btn-dark" id="call_button">Call Comcast</button>
+
+      <br><br>
+      <img id="start_img" src="mic.gif" alt="Start">
+    </div>
+
+    <div class="col-md-6 offset-md-1">
+      <div id="dialog-box">
+
+      </div>
+    </div>
+
+    <div class="col-md-2 offset-md-1">
+      <button type="button" class="btn btn-dark disabled" id="end_button">End Call</button>
+    </div>
+  </div>
+
+</div>
+<!-- End of body -->
+
+
+<script>
+var langs =
+[['Afrikaans',       ['af-ZA']],
+ ['Bahasa Indonesia',['id-ID']],
+ ['Bahasa Melayu',   ['ms-MY']],
+ ['Català',          ['ca-ES']],
+ ['Čeština',         ['cs-CZ']],
+ ['Deutsch',         ['de-DE']],
+ ['English',         ['en-AU', 'Australia'],
+                     ['en-CA', 'Canada'],
+                     ['en-IN', 'India'],
+                     ['en-NZ', 'New Zealand'],
+                     ['en-ZA', 'South Africa'],
+                     ['en-GB', 'United Kingdom'],
+                     ['en-US', 'United States']],
+ ['Español',         ['es-AR', 'Argentina'],
+                     ['es-BO', 'Bolivia'],
+                     ['es-CL', 'Chile'],
+                     ['es-CO', 'Colombia'],
+                     ['es-CR', 'Costa Rica'],
+                     ['es-EC', 'Ecuador'],
+                     ['es-SV', 'El Salvador'],
+                     ['es-ES', 'España'],
+                     ['es-US', 'Estados Unidos'],
+                     ['es-GT', 'Guatemala'],
+                     ['es-HN', 'Honduras'],
+                     ['es-MX', 'México'],
+                     ['es-NI', 'Nicaragua'],
+                     ['es-PA', 'Panamá'],
+                     ['es-PY', 'Paraguay'],
+                     ['es-PE', 'Perú'],
+                     ['es-PR', 'Puerto Rico'],
+                     ['es-DO', 'República Dominicana'],
+                     ['es-UY', 'Uruguay'],
+                     ['es-VE', 'Venezuela']],
+ ['Euskara',         ['eu-ES']],
+ ['Français',        ['fr-FR']],
+ ['Galego',          ['gl-ES']],
+ ['Hrvatski',        ['hr_HR']],
+ ['IsiZulu',         ['zu-ZA']],
+ ['Íslenska',        ['is-IS']],
+ ['Italiano',        ['it-IT', 'Italia'],
+                     ['it-CH', 'Svizzera']],
+ ['Magyar',          ['hu-HU']],
+ ['Nederlands',      ['nl-NL']],
+ ['Norsk bokmål',    ['nb-NO']],
+ ['Polski',          ['pl-PL']],
+ ['Português',       ['pt-BR', 'Brasil'],
+                     ['pt-PT', 'Portugal']],
+ ['Română',          ['ro-RO']],
+ ['Slovenčina',      ['sk-SK']],
+ ['Suomi',           ['fi-FI']],
+ ['Svenska',         ['sv-SE']],
+ ['Türkçe',          ['tr-TR']],
+ ['български',       ['bg-BG']],
+ ['Pусский',         ['ru-RU']],
+ ['Српски',          ['sr-RS']],
+ ['한국어',            ['ko-KR']],
+ ['中文',             ['cmn-Hans-CN', '普通话 (中国大陆)'],
+                     ['cmn-Hans-HK', '普通话 (香港)'],
+                     ['cmn-Hant-TW', '中文 (台灣)'],
+                     ['yue-Hant-HK', '粵語 (香港)']],
+ ['日本語',           ['ja-JP']],
+ ['Lingua latīna',   ['la']]];
+
+for (var i = 0; i < langs.length; i++) {
+  select_language.options[i] = new Option(langs[i][0], i);
+}
+select_language.selectedIndex = 6;
+updateCountry();
+select_dialect.selectedIndex = 6;
+showInfo('info_start');
+
+function updateCountry() {
+  for (var i = select_dialect.options.length - 1; i >= 0; i--) {
+    select_dialect.remove(i);
+  }
+  var list = langs[select_language.selectedIndex];
+  for (var i = 1; i < list.length; i++) {
+    select_dialect.options.add(new Option(list[i][1], list[i][0]));
+  }
+  select_dialect.style.visibility = list[1].length == 1 ? 'hidden' : 'visible';
+}
+
+var create_email = false;
+var final_transcript = '';
+var global_interim_transcript; //for up-to-date difference on word count
+var recognizing = false;
+var ignore_onend;
+var start_timestamp;
+
+if (!('webkitSpeechRecognition' in window)) {
+  upgrade();
+} else {
+  // start_button.style.display = 'inline-block';
+  var recognition = new webkitSpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = function() {
+    console.log("Hi");
+    recognizing = true;
+    showInfo('info_speak_now');
+    start_img.src = 'mic-animate.gif';
+  };
+
+  recognition.onerror = function(event) {
+    if (event.error == 'no-speech') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_speech');
+      ignore_onend = true;
+    }
+    if (event.error == 'audio-capture') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_microphone');
+      ignore_onend = true;
+    }
+    if (event.error == 'not-allowed') {
+      if (event.timeStamp - start_timestamp < 100) {
+        showInfo('info_blocked');
+      } else {
+        showInfo('info_denied');
+      }
+      ignore_onend = true;
+    }
+  };
+
+  recognition.onend = function() {
+    recognizing = false;
+    if (ignore_onend) {
+      return;
+    }
+    start_img.src = 'mic.gif';
+    if (!final_transcript) {
+      showInfo('info_start');
+      return;
+    }
+    showInfo('');
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+      var range = document.createRange();
+      // range.selectNode(document.getElementById('final_span'));
+      window.getSelection().addRange(range);
+    }
+    if (create_email) {
+      create_email = false;
+      createEmail();
+    }
+  };
+
+  recognition.onresult = function(event) {
+    // console.log("recognition onresult");
+    var interim_transcript = '';
+    global_interim_transcript = '';
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        final_transcript += event.results[i][0].transcript;
+      } else {
+        interim_transcript += event.results[i][0].transcript;
+        global_interim_transcript += event.results[i][0].transcript;
+      }
+    }
+    final_transcript = capitalize(final_transcript);
+    // final_span.innerHTML = linebreak(final_transcript);
+    // interim_span.innerHTML = linebreak(interim_transcript);
+    if (final_transcript || interim_transcript) {
+      showButtons('inline-block');
+    }
+    
+  };
+}
+
+function upgrade() {
+  // start_button.style.visibility = 'hidden';
+  showInfo('info_upgrade');
+}
+
+var two_line = /\n\n/g;
+var one_line = /\n/g;
+function linebreak(s) {
+  return s.replace(two_line, '<p></p>').replace(one_line, '<br>');
+}
+
+var first_char = /\S/;
+function capitalize(s) {
+  return s.replace(first_char, function(m) { return m.toUpperCase(); });
+}
+
+function createEmail() {
+  var n = final_transcript.indexOf('\n');
+  if (n < 0 || n >= 80) {
+    n = 40 + final_transcript.substring(40).indexOf(' ');
+  }
+  var subject = encodeURI(final_transcript.substring(0, n));
+  var body = encodeURI(final_transcript.substring(n + 1));
+  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+}
+
+function copyButton() {
+  if (recognizing) {
+    recognizing = false;
+    recognition.stop();
+  }
+  // copy_button.style.display = 'none';
+  // copy_info.style.display = 'inline-block';
+  showInfo('');
+}
+
+function emailButton() {
+  if (recognizing) {
+    create_email = true;
+    recognizing = false;
+    recognition.stop();
+  } else {
+    createEmail();
+  }
+  email_button.style.display = 'none';
+  email_info.style.display = 'inline-block';
+  showInfo('');
+}
+
+function startButton(event) {
+  if (recognizing) {
+    recognition.stop();
+    return;
+  }
+  final_transcript = '';
+  recognition.lang = select_dialect.value;
+  recognition.start();
+  ignore_onend = false;
+  // final_span.innerHTML = '';
+  // interim_span.innerHTML = '';
+  start_img.src = 'mic-slash.gif';
+  showInfo('info_allow');
+  showButtons('none');
+  start_timestamp = event.timeStamp;
+}
+
+function showInfo(s) {
+  if (s) {
+    for (var child = info.firstChild; child; child = child.nextSibling) {
+      if (child.style) {
+        child.style.display = child.id == s ? 'inline' : 'none';
+      }
+    }
+    info.style.visibility = 'visible';
+  } else {
+    info.style.visibility = 'hidden';
+  }
+}
+
+var current_style;
+function showButtons(style) {
+  if (style == current_style) {
+    return;
+  }
+  current_style = style;
+  // copy_button.style.display = style;
+  // email_button.style.display = style;
+  // copy_info.style.display = 'none';
+  // email_info.style.display = 'none';
+}
+</script>
+
+<script type="text/javascript">
+
+// Takes a string as input, and returns the number of 
+// words as output.
+// Ex: "The quick brown fox jumps over the lazy dog" would return 9.
+function get_word_count(str) {
+  if (str.length == 0) {
+  return 0;
+  } else {
+  return str.match(/\S+/g).length;
+  }
+}
+
+// Takes an array as input, and returns the sum 
+// of the array as output.
+// Ex: The array sum of [0, 1, 2, 3] is 6.
+// array_sum([0, 1, 2, 3]) = 6
+function array_sum(arr) {
+  return arr.reduce(function(a, b) {
+  return a + b;
+  });
+}
+
+//Keep state - need object
+var customerRep = {
+  prevState: "",
+  state: "hello",
+  on: false,
+  speaking: true,
+  interest_words: []
+};
+
+//when button is pressed, start the call
+customerRep.beginCall = function() {
+  if(customerRep.on == true) {
+    console.log("Agent is already engaged in speaking");
+  } else {
+    console.log("Beginning call");
+    //clear dialog box
+    $("#dialog-box").html("");
+    customerRep.on = true;
+    customerRep.state = "hello";
+    customerRep.noRecognizeCount = 0;
+    customerRep.loopInterval = setInterval(customerRep.loop, 1000);
+  }
+} 
+
+customerRep.endCall = function() {
+  if(customerRep.on == true) {
+    customerRep.on = false;
+    clearInterval(customerRep.loopInterval);
+    start_img.src = 'mic.gif';
+    console.log("Call ended");
+    $("#call_button").removeClass("disabled");
+    $("#end_button").addClass("disabled");
+  }
+}
+
+customerRep.speak = function(msg, callback) {
+  customerRep.message = new SpeechSynthesisUtterance(msg);
+  customerRep.message.rate = 1.2;
+  window.speechSynthesis.speak(customerRep.message);
+  $("#dialog-box").prepend("<p class='agent_words'><strong>Rep:</strong> " + msg + "</p>");
+  customerRep.message.onend = callback; //perform function
+}
+
+customerRep.loop = function() {
+
+  console.log(customerRep.state);
+  
+  switch(customerRep.state) {
+    case "listening":
+      if(customerRep.speaking) {
+        start_img.src = 'mic-animate.gif';
+        customerRep.beginListening();
+      }
+      break;
+    case "speaking":
+      start_img.src = 'mic.gif';
+      break;
+    case "hello":
+      customerRep.state = "speaking";
+      customerRep.speak("Hello, thank you for contacting Comcast Customer Support.", function() {
+        customerRep.speak("Please listen carefully to our menu. For Account Information, say 'account information'. For Technical support, say 'technical support'. For Product Information, say 'Product Information'. To end the call, say 'end call' or press the End Call button on the right.", function() {
+          
+          customerRep.state = "listening";
+          customerRep.interest_words = ["account information", "technical support", "product information", "end call"];
+        });
+      });
+      break; //end hello
+    case "account information":
+      customerRep.state = "speaking";
+      customerRep.speak("Okay. Account information.", function() {
+        customerRep.speak("What would you like to do? Say 'check balance' or 'pay balance'.", function() {
+          customerRep.state = "listening";
+          customerRep.interest_words = ["check balance", "pay balance"];
+          customerRep.prevState = "account information";
+        });
+      });
+      break;
+    case "check balance":
+      customerRep.state = "speaking";
+      customerRep.speak("Okay. Check Balance.", function() {
+        customerRep.speak("Your current balance is $128.67. Transferring you to pay your balance.'", function() {
+          customerRep.state = "pay balance";
+          customerRep.interest_words = [];
+          customerRep.prevState = "check balance";
+        });
+      });
+      break;
+    case "pay balance":
+      customerRep.state = "speaking";
+      customerRep.speak("Okay. Pay Balance.", function() {
+        customerRep.speak("Please hold while I transfer you to our payment system.", function() {
+          customerRep.state = "payment process";
+          customerRep.interest_words = [];
+          customerRep.prevState = "pay balance";
+        });
+      });
+      break;
+    case "payment process":
+      customerRep.state = "speaking";
+      customerRep.speak("Okay. Please say your 12 digit credit card number.", function() {
+        customerRep.state = "listening";
+        customerRep.interest_words = [];
+        customerRep.prevState = "payment process";
+      });
+      break;
+    case "expiration date":
+      customerRep.state = "speaking";
+      customerRep.speak("Please say the four digit expiration date. For example if it expires in January 2023, say 0123.", function() {
+        customerRep.state = "listening";
+        customerRep.interest_words = [];
+        customerRep.prevState = "expiration date";
+      });
+      break;
+    case "security code":
+      customerRep.state = "speaking";
+      customerRep.speak("Please say the three digit security code on the back of your card.", function() {
+        customerRep.state = "listening";
+        customerRep.interest_words = [];
+        customerRep.prevState = "security code";
+      });
+      break;
+    case "end call":
+      customerRep.state = "speaking";
+      customerRep.speak("Thank you for contacting Comcast Customer Support. Have a nice day.", function() {
+        customerRep.endCall();
+      });
+      break;
+    case "technical support":
+      customerRep.state = "speaking";
+      customerRep.speak("Please briefly describe the problem.", function() {
+        customerRep.state = "listening";
+        customerRep.interest_words = [];
+        customerRep.prevState = "technical support";
+      });
+      break;
+    case "turn_off_on":
+      customerRep.state = "speaking";
+      customerRep.speak("Have you tried turning it off and on? Please say 'yes' or 'no'.", function() {
+        customerRep.state = "listening";
+        customerRep.interest_words = ["yes", "no"];
+        customerRep.prevState = "turn_off_on";
+      });
+      break;
+    case "yes":
+      if(customerRep.prevState == "turn_off_on") {
+        customerRep.state = "speaking";
+        customerRep.speak("We will connect you to the next available technical agent. Please hold while I transfer your call.", function() {
+          customerRep.state = "transfer_agent";
+        });
+      } else if(customerRep.prevState == "no tech support") {
+        customerRep.state = "speaking";
+        customerRep.speak("I'm glad I could help.", function() {
+          customerRep.state = "end call";
+        });
+      } else if(customerRep.prevState == "product information") {
+        customerRep.state = "speaking";
+        customerRep.speak("Great! Which product would you like to purchase? Say 'Internet', 'TV', 'Phone', or 'Home Security'.", function() {
+          customerRep.state = "listening";
+          customerRep.interest_words = ["internet", "tv", "phone", "home security"];
+          customerRep.prevState = "yes product information";
+        });
+      }
+      break;
+    case "no":
+      if(customerRep.prevState == "turn_off_on") {
+        customerRep.state = "speaking";
+        customerRep.speak("Try turning it off and on.", function() {
+          customerRep.speak("Did it work? Say 'yes' or 'no'.", function() {
+            customerRep.state = "listening";
+            customerRep.interest_words = ['yes', 'no'];
+            customerRep.prevState = "no tech support";
+          });
+        });
+      } else if(customerRep.prevState == "no tech support") {
+        customerRep.state = "speaking";
+        customerRep.speak("We will connect you to the next available technical agent. Please hold while I transfer your call.", function() {
+          customerRep.state = "transfer_agent";
+        });
+      } else if(customerRep.prevState == "product information") {
+        customerRep.state = "speaking";
+        customerRep.speak("That is all right. Routing back to main menu.", function() {
+          customerRep.state = "hello";
+        });
+      }
+      break;
+    case "transfer_agent":
+      customerRep.endCall();
+      break;
+    case "product information":
+      customerRep.state = "speaking";
+      customerRep.speak("Okay. Product Information. What are you shopping for? We have 'Internet', 'TV', 'Phone', or 'Home Security'.", function() {
+        customerRep.speak("Would you like to purchase one? Say 'yes' or 'no'.", function() {
+          customerRep.state = "listening";
+          customerRep.interest_words = ["yes", "no"];
+          customerRep.prevState = "product information";
+        });
+      });
+      break;
+    case "internet":
+      customerRep.state = "payment process";
+      break;
+    case "tv":
+      customerRep.state = "payment process";
+      break;
+    case "phone":
+      customerRep.state = "payment process";
+      break;
+    case "home security":
+      customerRep.state = "payment process";
+      break;
+  }
+}
+
+customerRep.beginListening = function() {
+  customerRep.speaking = false;
+  customerRep.recognition = new webkitSpeechRecognition();
+  customerRep.recognition.continuous = true;
+  customerRep.recognition.interimResults = true;
+  customerRep.recognition.lang = select_dialect.value;
+
+  customerRep.recognition.onresult = function(event){
+    console.log("customerRep onresult");
+    var interim_transcript = '';
+    var temp_words = '';
+    var final_string = "";
+    var found_trigger = false;
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        final_string += event.results[i][0].transcript;
+      } else {
+        interim_transcript += event.results[i][0].transcript;
+        temp_words += event.results[i][0].transcript;
+      }
+    }
+
+    final_string = final_string.toLowerCase().trim(); //remove white space both sides
+    // console.log(temp_words);
+    // console.log(final_string);
+
+    if(final_string != "") {
+      customerRep.recognition.stop();
+
+      //if nothing to check for, then found trigger word. And change states for edge cases. Otherwise loop through list, check includes(), and change state to equal trigger word
+      if(customerRep.interest_words.length == 0) {
+        found_trigger = true;
+
+        //edge case: tech support
+        switch(customerRep.prevState) {
+          case "technical support":
+            customerRep.state = "turn_off_on";
+            break;
+          case "payment process":
+            //check if 12 digits provided and then link to exp date stage
+            final_string = final_string.replace(/-/g, "");
+            final_string = final_string.replace(/\s/g, '');
+            final_string = final_string.replace(/zero/g, '0');
+            final_string = final_string.replace(/one/g, '1');
+            final_string = final_string.replace(/two/g, '2');
+            final_string = final_string.replace(/three/g, '3');
+            final_string = final_string.replace(/four/g, '4');
+            final_string = final_string.replace(/five/g, '5');
+            final_string = final_string.replace(/six/g, '6');
+            final_string = final_string.replace(/seven/g, '7');
+            final_string = final_string.replace(/eight/g, '8');
+            final_string = final_string.replace(/nine/g, '9');
+            console.log(final_string + " " + final_string.length);
+            if(final_string.length >= 12) {
+              customerRep.state = "expiration date";
+            } else {
+              customerRep.noRecognizeCount += 1;
+              customerRep.state = "speaking";
+              customerRep.speak("I'm sorry. I heard " + final_string + " but I don't quite get that. Please say the 12 digit number on your credit card.", function() {
+                customerRep.state = "listening";
+              });
+            }
+            break;
+          case "expiration date":
+            final_string = final_string.replace(/-/g, "");
+            final_string = final_string.replace(/\s/g, '');
+            final_string = final_string.replace(/zero/g, '0');
+            final_string = final_string.replace(/one/g, '1');
+            final_string = final_string.replace(/two/g, '2');
+            final_string = final_string.replace(/three/g, '3');
+            final_string = final_string.replace(/four/g, '4');
+            final_string = final_string.replace(/five/g, '5');
+            final_string = final_string.replace(/six/g, '6');
+            final_string = final_string.replace(/seven/g, '7');
+            final_string = final_string.replace(/eight/g, '8');
+            final_string = final_string.replace(/nine/g, '9');
+            console.log(final_string + " " + final_string.length);
+
+            if(final_string.length == 4) {
+              customerRep.state = "security code";
+            } else {
+              customerRep.noRecognizeCount += 1;
+              customerRep.state = "speaking";
+              customerRep.speak("I'm sorry. I heard " + final_string + " but I don't quite get that. Please say the 4 digit expiration date on your credit card.", function() {
+                customerRep.state = "listening";
+              });
+            }
+            break;
+          case "security code":
+            final_string = final_string.replace(/-/g, "");
+            final_string = final_string.replace(/\s/g, '');
+            final_string = final_string.replace(/zero/g, '0');
+            final_string = final_string.replace(/one/g, '1');
+            final_string = final_string.replace(/two/g, '2');
+            final_string = final_string.replace(/three/g, '3');
+            final_string = final_string.replace(/four/g, '4');
+            final_string = final_string.replace(/five/g, '5');
+            final_string = final_string.replace(/six/g, '6');
+            final_string = final_string.replace(/seven/g, '7');
+            final_string = final_string.replace(/eight/g, '8');
+            final_string = final_string.replace(/nine/g, '9');
+            console.log(final_string + " " + final_string.length);
+
+            if(final_string.length == 3) {
+              customerRep.state = "speaking";
+              customerRep.speak("Your information has been captured, and will post to your account in three business days.", function() {
+                customerRep.state = "end call";
+              });
+            } else {
+              customerRep.noRecognizeCount += 1;
+              customerRep.state = "speaking";
+              customerRep.speak("I'm sorry. I heard " + final_string + " but I don't quite get that. Please say the 3 digit security code on the back of your credit card.", function() {
+                customerRep.state = "listening";
+              });
+            }
+            break;
+
+        }//end switch
+
+      }
+      for(var i=0; i<customerRep.interest_words.length; i++) {
+        var tempword = customerRep.interest_words[i];
+
+        if(final_string.includes(tempword)) {
+          found_trigger = true;
+          //console.log(tempword);
+          customerRep.state = tempword;
+        }
+      } //end for
+
+      //can't find trigger_word 
+      if(found_trigger == false) {
+        customerRep.noRecognizeCount += 1;
+        customerRep.state = "speaking";
+        if(customerRep.noRecognizeCount == 4) {
+          customerRep.speak("It seems like I am unable to help you. I will connect you to the next available agent. Please hold.", function() {
+            customerRep.state = "transfer_agent";
+          });
+        } else {
+          customerRep.speak("I'm sorry. I don't recognize that. Please select from the list.", function() {
+            customerRep.state = "listening";
+          });
+        }
+        
+      }
+
+      customerRep.speaking = true;
+    }
+
+  }; //end onresult
+
+  customerRep.recognition.onerror = function(event) {
+    if (event.error == 'no-speech') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_speech');
+      ignore_onend = true;
+    }
+    if (event.error == 'audio-capture') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_microphone');
+      ignore_onend = true;
+    }
+    if (event.error == 'not-allowed') {
+      if (event.timeStamp - start_timestamp < 100) {
+        showInfo('info_blocked');
+      } else {
+        showInfo('info_denied');
+      }
+      ignore_onend = true;
+    }
+  };
+
+  customerRep.recognition.onend = function() {
+    console.log("onending");
+    customerRep.speaking = true;
+  };
+
+  customerRep.recognition.start();
+
+
+}
+
+$(document).ready(function() {
+
+  $("#call_button").click(function() {
+    $(this).addClass("disabled");
+    $("#end_button").removeClass("disabled");
+    customerRep.beginCall();
+  });
+
+  $("#end_button").click(function() {
+    $(this).addClass("disabled");
+    $("#call_button").removeClass("disabled");
+    customerRep.endCall();
+  });
+
+})
+
+</script>

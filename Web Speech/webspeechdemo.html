@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <title>Web Speech API Demo</title>
+  <!-- Add dependencies -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+  <!-- amCharts javascript sources -->
+    <script type="text/javascript" src="https://www.amcharts.com/lib/3/amcharts.js"></script>
+    <script type="text/javascript" src="https://cdn.amcharts.com/lib/3/gauge.js"></script>
+    <script type="text/javascript" src="https://www.amcharts.com/lib/3/themes/light.js"></script>
+</head>
+
+<style>
+  * {
+    font-family: Verdana, Arial, sans-serif;
+  }
+  a:link {
+    color:#000;
+    text-decoration: none;
+  }
+  a:visited {
+    color:#000;
+  }
+  a:hover {
+    color:#33F;
+  }
+  .button {
+    background: -webkit-linear-gradient(top,#008dfd 0,#0370ea 100%);
+    border: 1px solid #076bd2;
+    border-radius: 3px;
+    color: #fff;
+    display: none;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.3;
+    padding: 8px 25px;
+    text-align: center;
+    text-shadow: 1px 1px 1px #076bd2;
+    letter-spacing: normal;
+  }
+  .center {
+    padding: 10px;
+    text-align: center;
+  }
+  .final {
+    color: black;
+    padding-right: 3px; 
+  }
+  .interim {
+    color: gray;
+  }
+  .info {
+    font-size: 14px;
+    text-align: center;
+    color: #777;
+    display: none;
+  }
+  .right {
+    float: right;
+  }
+  .sidebyside {
+    display: inline-block;
+    width: 45%;
+    min-height: 40px;
+    text-align: left;
+    vertical-align: top;
+  }
+  #headline {
+    font-size: 40px;
+    font-weight: 300;
+  }
+  #info {
+    font-size: 20px;
+    text-align: center;
+    color: #777;
+    visibility: hidden;
+  }
+  #results {
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #ddd;
+    padding: 15px;
+    text-align: left;
+    min-height: 150px;
+  }
+  #start_button {
+    border: 0;
+    background-color:transparent;
+    padding: 0;
+  }
+</style>
+<h1 class="center" id="headline">
+  <a href="http://dvcs.w3.org/hg/speech-api/raw-file/tip/speechapi.html">
+    Web Speech API</a> Demonstration</h1>
+<div id="info">
+  <p id="info_start">Click on the microphone icon and begin speaking.</p>
+  <p id="info_speak_now">Speak now.</p>
+  <p id="info_no_speech">No speech was detected. You may need to adjust your
+    <a href="//support.google.com/chrome/bin/answer.py?hl=en&amp;answer=1407892">
+      microphone settings</a>.</p>
+  <p id="info_no_microphone" style="display:none">
+    No microphone was found. Ensure that a microphone is installed and that
+    <a href="//support.google.com/chrome/bin/answer.py?hl=en&amp;answer=1407892">
+    microphone settings</a> are configured correctly.</p>
+  <p id="info_allow">Click the "Allow" button above to enable your microphone.</p>
+  <p id="info_denied">Permission to use microphone was denied.</p>
+  <p id="info_blocked">Permission to use microphone is blocked. To change,
+    go to chrome://settings/contentExceptions#media-stream</p>
+  <p id="info_upgrade">Web Speech API is not supported by this browser.
+     Upgrade to <a href="//www.google.com/chrome">Chrome</a>
+     version 25 or later.</p>
+</div>
+<div class="right">
+  <button id="start_button" onclick="startButton(event)">
+    <img id="start_img" src="mic.gif" alt="Start"></button>
+</div>
+<div id="results">
+  <span id="final_span" class="final"></span>
+  <span id="interim_span" class="interim"></span>
+  <p>
+</div>
+<div class="center">
+  <div class="sidebyside" style="text-align:right">
+    <button id="copy_button" class="button" onclick="copyButton()">
+      Copy and Paste</button>
+    <div id="copy_info" class="info">
+      Press Control-C to copy text.<br>(Command-C on Mac.)
+    </div>
+  </div>
+  <div class="sidebyside">
+    <button id="email_button" class="button" onclick="emailButton()">
+      Create Email</button>
+    <div id="email_info" class="info">
+      Text sent to default email application.<br>
+      (See chrome://settings/handlers to change.)
+    </div>
+  </div>
+  <p>
+  <div id="div_language">
+    <select id="select_language" onchange="updateCountry()"></select>
+    &nbsp;&nbsp;
+    <select id="select_dialect"></select>
+  </div>
+</div>
+
+<div class="container">
+  <div id="chartdiv" style="width: 100%; height: 250px; background-color: #FFFFFF" ></div>
+  <div id="rate_feedback" class="col-xs-12 center alert" style="display:none"></div>
+</div>
+<!-- End of body -->
+
+
+<script>
+var langs =
+[['Afrikaans',       ['af-ZA']],
+ ['Bahasa Indonesia',['id-ID']],
+ ['Bahasa Melayu',   ['ms-MY']],
+ ['Català',          ['ca-ES']],
+ ['Čeština',         ['cs-CZ']],
+ ['Deutsch',         ['de-DE']],
+ ['English',         ['en-AU', 'Australia'],
+                     ['en-CA', 'Canada'],
+                     ['en-IN', 'India'],
+                     ['en-NZ', 'New Zealand'],
+                     ['en-ZA', 'South Africa'],
+                     ['en-GB', 'United Kingdom'],
+                     ['en-US', 'United States']],
+ ['Español',         ['es-AR', 'Argentina'],
+                     ['es-BO', 'Bolivia'],
+                     ['es-CL', 'Chile'],
+                     ['es-CO', 'Colombia'],
+                     ['es-CR', 'Costa Rica'],
+                     ['es-EC', 'Ecuador'],
+                     ['es-SV', 'El Salvador'],
+                     ['es-ES', 'España'],
+                     ['es-US', 'Estados Unidos'],
+                     ['es-GT', 'Guatemala'],
+                     ['es-HN', 'Honduras'],
+                     ['es-MX', 'México'],
+                     ['es-NI', 'Nicaragua'],
+                     ['es-PA', 'Panamá'],
+                     ['es-PY', 'Paraguay'],
+                     ['es-PE', 'Perú'],
+                     ['es-PR', 'Puerto Rico'],
+                     ['es-DO', 'República Dominicana'],
+                     ['es-UY', 'Uruguay'],
+                     ['es-VE', 'Venezuela']],
+ ['Euskara',         ['eu-ES']],
+ ['Français',        ['fr-FR']],
+ ['Galego',          ['gl-ES']],
+ ['Hrvatski',        ['hr_HR']],
+ ['IsiZulu',         ['zu-ZA']],
+ ['Íslenska',        ['is-IS']],
+ ['Italiano',        ['it-IT', 'Italia'],
+                     ['it-CH', 'Svizzera']],
+ ['Magyar',          ['hu-HU']],
+ ['Nederlands',      ['nl-NL']],
+ ['Norsk bokmål',    ['nb-NO']],
+ ['Polski',          ['pl-PL']],
+ ['Português',       ['pt-BR', 'Brasil'],
+                     ['pt-PT', 'Portugal']],
+ ['Română',          ['ro-RO']],
+ ['Slovenčina',      ['sk-SK']],
+ ['Suomi',           ['fi-FI']],
+ ['Svenska',         ['sv-SE']],
+ ['Türkçe',          ['tr-TR']],
+ ['български',       ['bg-BG']],
+ ['Pусский',         ['ru-RU']],
+ ['Српски',          ['sr-RS']],
+ ['한국어',            ['ko-KR']],
+ ['中文',             ['cmn-Hans-CN', '普通话 (中国大陆)'],
+                     ['cmn-Hans-HK', '普通话 (香港)'],
+                     ['cmn-Hant-TW', '中文 (台灣)'],
+                     ['yue-Hant-HK', '粵語 (香港)']],
+ ['日本語',           ['ja-JP']],
+ ['Lingua latīna',   ['la']]];
+
+for (var i = 0; i < langs.length; i++) {
+  select_language.options[i] = new Option(langs[i][0], i);
+}
+select_language.selectedIndex = 6;
+updateCountry();
+select_dialect.selectedIndex = 6;
+showInfo('info_start');
+
+function updateCountry() {
+  for (var i = select_dialect.options.length - 1; i >= 0; i--) {
+    select_dialect.remove(i);
+  }
+  var list = langs[select_language.selectedIndex];
+  for (var i = 1; i < list.length; i++) {
+    select_dialect.options.add(new Option(list[i][1], list[i][0]));
+  }
+  select_dialect.style.visibility = list[1].length == 1 ? 'hidden' : 'visible';
+}
+
+var create_email = false;
+var final_transcript = '';
+var global_interim_transcript; //for up-to-date difference on word count
+var recognizing = false;
+var ignore_onend;
+var start_timestamp;
+var word_rate;
+if (!('webkitSpeechRecognition' in window)) {
+  upgrade();
+} else {
+  start_button.style.display = 'inline-block';
+  var recognition = new webkitSpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = function() {
+    recognizing = true;
+    word_rate = setInterval(getRate, 5000); //run getRate() every 5 seconds
+    $("#rate_feedback").show();
+    showInfo('info_speak_now');
+    start_img.src = 'mic-animate.gif';
+  };
+
+  recognition.onerror = function(event) {
+    if (event.error == 'no-speech') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_speech');
+      ignore_onend = true;
+    }
+    if (event.error == 'audio-capture') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_microphone');
+      ignore_onend = true;
+    }
+    if (event.error == 'not-allowed') {
+      if (event.timeStamp - start_timestamp < 100) {
+        showInfo('info_blocked');
+      } else {
+        showInfo('info_denied');
+      }
+      ignore_onend = true;
+    }
+  };
+
+  recognition.onend = function() {
+    recognizing = false;
+    clearInterval(word_rate);
+    $("#rate_feedback").hide();
+    if (ignore_onend) {
+      return;
+    }
+    start_img.src = 'mic.gif';
+    if (!final_transcript) {
+      showInfo('info_start');
+      return;
+    }
+    showInfo('');
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+      var range = document.createRange();
+      range.selectNode(document.getElementById('final_span'));
+      window.getSelection().addRange(range);
+    }
+    if (create_email) {
+      create_email = false;
+      createEmail();
+    }
+  };
+
+  recognition.onresult = function(event) {
+    var interim_transcript = '';
+    global_interim_transcript = '';
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        final_transcript += event.results[i][0].transcript;
+      } else {
+        interim_transcript += event.results[i][0].transcript;
+        global_interim_transcript += event.results[i][0].transcript;
+      }
+    }
+    final_transcript = capitalize(final_transcript);
+    final_span.innerHTML = linebreak(final_transcript);
+    interim_span.innerHTML = linebreak(interim_transcript);
+    if (final_transcript || interim_transcript) {
+      showButtons('inline-block');
+    }
+    
+  };
+}
+
+function upgrade() {
+  start_button.style.visibility = 'hidden';
+  showInfo('info_upgrade');
+}
+
+var two_line = /\n\n/g;
+var one_line = /\n/g;
+function linebreak(s) {
+  return s.replace(two_line, '<p></p>').replace(one_line, '<br>');
+}
+
+var first_char = /\S/;
+function capitalize(s) {
+  return s.replace(first_char, function(m) { return m.toUpperCase(); });
+}
+
+function createEmail() {
+  var n = final_transcript.indexOf('\n');
+  if (n < 0 || n >= 80) {
+    n = 40 + final_transcript.substring(40).indexOf(' ');
+  }
+  var subject = encodeURI(final_transcript.substring(0, n));
+  var body = encodeURI(final_transcript.substring(n + 1));
+  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+}
+
+function copyButton() {
+  if (recognizing) {
+    recognizing = false;
+    recognition.stop();
+  }
+  copy_button.style.display = 'none';
+  copy_info.style.display = 'inline-block';
+  showInfo('');
+}
+
+function emailButton() {
+  if (recognizing) {
+    create_email = true;
+    recognizing = false;
+    recognition.stop();
+  } else {
+    createEmail();
+  }
+  email_button.style.display = 'none';
+  email_info.style.display = 'inline-block';
+  showInfo('');
+}
+
+function startButton(event) {
+  if (recognizing) {
+    recognition.stop();
+    return;
+  }
+  final_transcript = '';
+  recognition.lang = select_dialect.value;
+  recognition.start();
+  ignore_onend = false;
+  final_span.innerHTML = '';
+  interim_span.innerHTML = '';
+  start_img.src = 'mic-slash.gif';
+  showInfo('info_allow');
+  showButtons('none');
+  start_timestamp = event.timeStamp;
+}
+
+function showInfo(s) {
+  if (s) {
+    for (var child = info.firstChild; child; child = child.nextSibling) {
+      if (child.style) {
+        child.style.display = child.id == s ? 'inline' : 'none';
+      }
+    }
+    info.style.visibility = 'visible';
+  } else {
+    info.style.visibility = 'hidden';
+  }
+}
+
+var current_style;
+function showButtons(style) {
+  if (style == current_style) {
+    return;
+  }
+  current_style = style;
+  copy_button.style.display = style;
+  email_button.style.display = style;
+  copy_info.style.display = 'none';
+  email_info.style.display = 'none';
+}
+</script>
+
+<script type="text/javascript">
+var gaugeChart = AmCharts.makeChart("chartdiv",
+    {
+      "type": "gauge",
+      "faceColor": "#555555",
+      "marginBottom": 0,
+      "marginTop": 10,
+      "startDuration": 0,
+      "color": "#555555",
+      "fontSize": 13,
+      "theme": "light",
+      "arrows": [
+        {
+          "color": "#555555",
+          "id": "GaugeArrow-1",
+          "value": 0
+        }
+      ],
+      "axes": [
+        {
+          "axisThickness": 1,
+          "bottomText": "0 words/min.",
+          "bottomTextYOffset": -20,
+          "endValue": 300,
+          "id": "GaugeAxis-1",
+          "valueInterval": 20,
+          "bands": [
+            {
+              "alpha": 0.7,
+              "color": "#ea3838",
+              "endValue": 133,
+              "id": "GaugeBand-1",
+              "startValue": 0
+            },
+            {
+              "alpha": 0.7,
+              "color": "#00CC00",
+              "endValue": 188,
+              "id": "GaugeBand-2",
+              "startValue": 133
+            },
+            {
+              "alpha": 0.7,
+              "color": "#ea3838",
+              "endValue": 300,
+              "id": "GaugeBand-3",
+              "innerRadius": "95%",
+              "startValue": 189
+            }
+          ]
+        }
+      ],
+      "allLabels": [],
+      "balloon": {},
+      "titles": []
+    }
+  );
+
+
+
+// Takes a string as input, and returns the number of 
+// words as output.
+// Ex: "The quick brown fox jumps over the lazy dog" would return 9.
+function get_word_count(str) {
+  if (str.length == 0) {
+  return 0;
+  } else {
+  return str.match(/\S+/g).length;
+  }
+}
+
+// Takes an array as input, and returns the sum 
+// of the array as output.
+// Ex: The array sum of [0, 1, 2, 3] is 6.
+// array_sum([0, 1, 2, 3]) = 6
+function array_sum(arr) {
+  return arr.reduce(function(a, b) {
+  return a + b;
+  });
+}
+
+var previous_final_count = 0;
+var speed_array = [];
+function getRate() {
+  // console.log("calculating rate");
+  var current_final_count = get_word_count(final_transcript);
+  var difference_speed = (current_final_count - previous_final_count) * 12; //multiply by 12 5 sec * 12 = 60 sec = 1 min
+
+  speed_array.push(difference_speed);
+  console.log("Speed Array: " + speed_array);
+
+  //get the arithmetic average speaking rate
+  var average_speaking_rate = array_sum(speed_array) / speed_array.length;
+  console.log("Avg rate: " + average_speaking_rate);
+
+  if(gaugeChart) {
+    if(gaugeChart.arrows) {
+      if(gaugeChart.arrows[0]) {
+        if(gaugeChart.arrows[0].setValue) {
+          gaugeChart.arrows[0].setValue(average_speaking_rate);
+          gaugeChart.axes[0].setBottomText(Math.ceil(average_speaking_rate) + " words/min.");
+        }
+      }
+    }
+  }
+
+  if(Math.ceil(average_speaking_rate) < 133) {
+    refreshFeedbackClass("alert-danger");
+    $("#rate_feedback").html("Speak faster!");
+  } else if (Math.ceil(average_speaking_rate) > 188){
+    refreshFeedbackClass("alert-danger");
+    $("#rate_feedback").html("Speak slower!");
+  } else {
+    refreshFeedbackClass("alert-success");
+    $("#rate_feedback").html("Good!");
+  }
+
+  previous_final_count = current_final_count;
+  
+}
+
+
+function refreshFeedbackClass(str) {
+  $("#rate_feedback").removeClass("alert-success alert-danger").addClass(str);
+}
+
+</script>
